@@ -5,6 +5,13 @@ import json
 import pandas
 import sys
 
+def process_weekday(blob, label, attribute, weekday):
+  if "X" == attribute:
+    return
+  if "openingHours" not in blob:
+    blob["openingHours"] = []
+  blob["openingHours"].append("{} {}".format(weekday, str(attribute)))
+
 def process_attribute(blob, label, attribute):
   if "Name" == label: 
     blob["name"] = attribute
@@ -12,33 +19,45 @@ def process_attribute(blob, label, attribute):
   elif "Address Line 1" == label:
     blob["address"] = str(attribute)
   elif "Address Line 2" == label:
-    blob["address"] += ", "
-    blob["address"] += str(attribute)
+    blob["address"] += ", {}".format(str(attribute)) 
   elif "City or Locality" == label:
-    blob["address"] += ", "
-    blob["address"] += str(attribute)
+    blob["address"] += ", {}".format(str(attribute)) 
   elif "State or Province" == label:
-    blob["address"] += ", "
-    blob["address"] += str(attribute)
+    blob["address"] += ", {}".format(str(attribute)) 
   elif "Postal Code" == label:
-    blob["address"] += ", "
-    blob["address"] += str(attribute)
+    blob["address"] += ", {}".format(str(attribute)) 
   elif "COVID-19 testing website" == label:
     blob["url"] = str(attribute)
-#  elif "Free COVID-19 tests" == label:
-#  elif "Phone" == label:
-#  elif "Email" == label:
+  elif "Free COVID-19 tests" == label:
+    if "Free for all" == attribute:
+      blob["isAccessibleForFree"] = "true"
+      blob["priceRange"] = str(attribute)
+    elif "Free with insurance" == attribute:
+      blob["priceRange"] = str(attribute)
+  elif "Phone" == label:
+    blob["telephone"] = str(attribute)
+  elif "Email" == label:
+    blob["email"] = str(attribute)
 #  elif "Website" == label:
 #  elif "Category" == label:
-#  elif "Latitude" == label:
-#  elif "Longitude" == label:
-#  elif "Monday" == label:
-#  elif "Tuesday" == label:
-#  elif "Wednesday" == label:
-#  elif "Thursday" == label:
-#  elif "Friday" == label:
-#  elif "Saturday" == label:
-#  elif "Sunday" == label:
+  elif "Latitude" == label:
+    blob["latitude"] = str(attribute)
+  elif "Longitude" == label:
+    blob["longitude"] = str(attribute)
+  elif "Monday" == label:
+    process_weekday(blob, label, attribute, "Mo")
+  elif "Tuesday" == label:
+    process_weekday(blob, label, attribute, "Tu")
+  elif "Wednesday" == label:
+    process_weekday(blob, label, attribute, "We")
+  elif "Thursday" == label:
+    process_weekday(blob, label, attribute, "Th")
+  elif "Friday" == label:
+    process_weekday(blob, label, attribute, "Fr")
+  elif "Saturday" == label:
+    process_weekday(blob, label, attribute, "Sa")
+  elif "Sunday" == label:
+    process_weekday(blob, label, attribute, "Su")
 #  elif "Appointment required" == label:
 #  elif "Referral required" == label:
 #  elif "Patient restrictions" == label:
