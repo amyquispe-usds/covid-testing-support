@@ -5,31 +5,26 @@ import json
 import pandas
 import sys
 
+def process_attribute(blob, label, attribute):
+  blob[label] = attribute
+
 def process_location(labels, location, last):
   row = 0
   total_rows = len(labels.index) 
-  blob = """
-         {
-           "@type":"CovidTestingFacility",
-         """
-  first = True
+  location_blob = {"@type":"CovidTestingFacility"} 
   while row < total_rows:
     label = labels.iloc[row]
     attribute = location.iloc[row]
     if pandas.isnull(attribute):
       row += 1
       continue
-    if not first:
-      blob += ","
-    blob += "\"{}\": \"{}\"".format(label,attribute)
-    first = False
+    process_attribute(location_blob, label, attribute)
     row += 1
-  if last:
-    blob += "}" 
-  else:
-    blob += "},"
-  print(blob)
-  return blob
+  return_string = json.dumps(location_blob)
+  print(return_string)
+  if not last:
+    return_string += ","
+  return return_string
 
 def process_df(df):
   labels = df.iloc[:,1]
