@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
-
 from datetime import date
 import json
 import pandas
 import sys
+
+def additional_property(blob, property_name, attribute):
+  if "additionalProperty" not in blob:
+    blob["additionalProperty"] = []
+  property = {}
+  property["@type"] = "PropertyValue"
+  property["name"] = property_name
+  property["value"] = str(attribute)
+  blob["additionalProperty"].append(property)
 
 def process_weekday(blob, label, attribute, weekday):
   if "X" == attribute:
@@ -11,6 +19,23 @@ def process_weekday(blob, label, attribute, weekday):
   if "openingHours" not in blob:
     blob["openingHours"] = []
   blob["openingHours"].append("{} {}".format(weekday, str(attribute)))
+
+def process_test_type(blob, label, attribute):
+  if "No" == attribute:
+    return
+  if "availableService" not in blob:
+    blob["availableService"] = []
+  test_info = {}
+  test_info["@type"] = "MedicalTest"
+  test_info["name"] = str(label)
+  blob["availableService"].append(test_info)
+
+def process_test_info(blob, test_type, info_type, attribute):
+  tests = blob["availableService"]
+  for test in tests:
+    if test["name"] != test_type:
+      continue
+    additional_property(test, info_type, attribute)
 
 def process_attribute(blob, label, attribute):
   if "Name" == label: 
@@ -62,41 +87,72 @@ def process_attribute(blob, label, attribute):
 #  elif "Referral required" == label:
 #  elif "Patient restrictions" == label:
 #  elif "Location instructions" == label:
-#  elif "Insurance accepted" == label:
+  elif "Insurance accepted" == label:
+    blob["healthPlanNetworkId"] = attribute
 #  elif "Insurance required" == label:
 #  elif "Minimum age" == label:
 #  elif "Languages spoken at location" == label:
+### TODO: use "knowsLanguage" with IETF BCP 47 Standard
 #  elif "Wheelchair accessible entrance" == label:
 #  elif "Wheelchair accessible parking" == label:
 #  elif "Wheelchair accessible restroom" == label:
 #  elif "Wheelchair accessible elevator" == label:
-#  elif "Non-English interpreter services" == label:
-#  elif "ASL interpreter services" == label:
-#  elif "Drive-thru options" == label:
-#  elif "Non-rapid PCR/NAAT test" == label:
-#  elif "Non-rapid PCR/NAAT cost" == label:
-#  elif "Non-rapid PCR/NAAT time to get results (hours)" == label:
-#  elif "Non-rapid PCR/NAAT test method" == label:
-#  elif "Antigen test" == label:
-#  elif "Antigen test cost" == label:
-#  elif "Antigen test time to get results (hours)" == label:
-#  elif "Antibody test" == label:
-#  elif "Antibody test cost" == label:
-#  elif "Antibody test time to get results (hours)" == label:
-#  elif "Rapid PCR/NAAT test" == label:
-#  elif "Rapid PCR/NAAT test cost" == label:
-#  elif "Rapid PCR/NAAT test time to get results (hours)" == label:
-#  elif "Rapid PCR/NAAT test method" == label:
-#  elif "At-home tests" == label:
-#  elif "At-home test cost" == label:
-#  elif "Mail-in test" == label:
-#  elif "Mail-in test cost" == label:
-#  elif "Mail-in test time to get results (hours)" == label:
-#  elif "Also a COVID-19 vaccination a location" == label:
-#  elif "COVID-19 vaccination webiste" == label:
-#  elif "Other Notes" == label:
+  elif "Non-English interpreter services" == label:
+    additional_property(blob, "interpreterServices", attribute)
+  elif "ASL interpreter services" == label:
+    additional_property(blob, "interpreterServicesASL", attribute)
+  elif "Drive-thru options" == label:
+    if "Optional" == attribute or "Only" == attribute:
+      blob["hasDriveThroughService"] = "true" 
+      additional_property(blob, "driveThruOptions", attribute)
+  elif "Non-rapid PCR/NAAT test" == label:
+    process_test_type(blob, label, attribute)
+  elif "     Non-rapid PCR/NAAT cost" == label:
+    process_test_info(blob, "Non-rapid PCR/NAAT test", "cost", attribute)
+  elif "     Non-rapid PCR/NAAT time to get results (hours)" == label:
+    process_test_info(blob, "Non-rapid PCR/NAAT test", "timeToResults", attribute)
+  elif "     Non-rapid PCR/NAAT test method" == label:
+    process_test_info(blob, "Non-rapid PCR/NAAT test", "testMethod", attribute)
+  elif "Antigen test" == label:
+    process_test_type(blob, label, attribute)
+  elif "     Antigen test cost" == label:
+    process_test_info(blob, "Antigen test", "cost", attribute)
+  elif "     Antigen test time to get results (hours)" == label:
+    process_test_info(blob, "Antigen test", "timeToResults", attribute)
+  elif "Antibody test" == label:
+    process_test_type(blob, label, attribute)
+  elif "     Antibody test cost" == label:
+    process_test_info(blob, "Antibody test", "cost", attribute)
+  elif "     Antibody test time to get results (hours)" == label:
+    process_test_info(blob, "Antibody test", "timeToResults", attribute)
+  elif "Rapid PCR/NAAT test" == label:
+    process_test_type(blob, label, attribute)
+  elif "     Rapid PCR/NAAT test cost" == label:
+    process_test_info(blob, "Rapid PCR/NAAT test", "cost", attribute)
+  elif "     Rapid PCR/NAAT test time to get results (hours)" == label:
+    process_test_info(blob, "Rapid PCR/NAAT test", "timeToResults", attribute)
+  elif "     Rapid PCR/NAAT test method" == label:
+    process_test_info(blob, "Rapid PCR/NAAT test", "testMethod", attribute)
+  elif "At-home tests" == label:
+    process_test_type(blob, label, attribute)
+  elif "     At-home test cost" == label:
+    process_test_info(blob, "At-home tests", "cost", attribute)
+  elif "Mail-in test" == label:
+    process_test_type(blob, label, attribute)
+  elif "     Mail-in test cost" == label:
+    process_test_info(blob, "Mail-in test", "cost", attribute)
+  elif "     Mail-in test time to get results (hours)" == label:
+    process_test_info(blob, "Mail-in test", "timeToResults", attribute)
+  elif "Also a COVID-19 vaccination a location" == label:
+    additional_property(blob, "vaccineLocation", attribute)
+  elif "COVID-19 vaccination webiste" == label:
+    additional_property(blob, "vaccinationWebsite", attribute)
+  elif "Other Notes" == label:
+    additional_property(blob, "notes", attribute)
   else:
-    blob[label] = str(attribute)
+    TitleCase_label = ''.join(label.title().split())
+    camelCase_label = TitleCase_label[0].lower() + TitleCase_label[1:]
+    additional_property(blob, camelCase_label, attribute)
 
 def process_location(labels, location, last):
   row = 0
