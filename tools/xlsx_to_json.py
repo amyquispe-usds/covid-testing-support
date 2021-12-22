@@ -8,14 +8,28 @@ import sys
 def process_location(labels, location, last):
   row = 0
   total_rows = len(labels.index) 
+  blob = """
+         {
+           "@type":"CovidTestingFacility",
+         """
+  first = True
   while row < total_rows:
     label = labels.iloc[row]
     attribute = location.iloc[row]
-    print("Label: {}, attribute: {}".format(label,attribute))
+    if pandas.isnull(attribute):
+      row += 1
+      continue
+    if not first:
+      blob += ","
+    blob += "\"{}\": \"{}\"".format(label,attribute)
+    first = False
     row += 1
   if last:
-    return "{\"something\": \"somethingelse\"}"
-  return "{\"something\": \"somethingelse\"},"
+    blob += "}" 
+  else:
+    blob += "},"
+  print(blob)
+  return blob
 
 def process_df(df):
   labels = df.iloc[:,1]
